@@ -1,9 +1,16 @@
 syntax = "proto3";
-
 package frontend;
 
+import "google/api/annotations.proto";
+
+
 service Frontend {
-  rpc Process (ProcessRequest) returns (ProcessReply) {}
+  rpc Process (ProcessRequest) returns (ProcessReply) {
+    option (google.api.http) = {
+      post: "/v1/microserver/process"
+      body: "*"
+    };
+  }
 }
 
 message ProcessRequest {
