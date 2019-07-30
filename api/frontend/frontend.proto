@@ -1,0 +1,15 @@
+syntax = "proto3";
+
+package frontend;
+
+service Frontend {
+  rpc Process (ProcessRequest) returns (ProcessReply) {}
+}
+
+message ProcessRequest {
+  string input = 1;
+}
+
+message ProcessReply {
+  string output = 1;
+}
