@@ -1,0 +1,22 @@
+syntax = "proto3";
+package backend;
+
+import "google/api/annotations.proto";
+
+
+service Backend {
+  rpc Process (ProcessRequest) returns (ProcessReply) {
+    option (google.api.http) = {
+      post: "/v1/microserver/backend/process"
+      body: "*"
+    };
+  }
+}
+
+message ProcessRequest {
+  string input = 1;
+}
+
+message ProcessReply {
+  string output = 1;
+}
