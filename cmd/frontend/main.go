@@ -3,28 +3,93 @@ package main
 import (
 	"context"
 	"crypto/tls"
+	"crypto/x509"
 	"flag"
 	"fmt"
+	"io/ioutil"
 	"log"
 	"net"
 	"net/http"
 	"os"
 	"strings"
+	"time"
 
+	backend "github.com/bretmckee/microservice/api/backend"
 	pb "github.com/bretmckee/microservice/api/frontend"
+	"github.com/golang/protobuf/proto"
 	"github.com/grpc-ecosystem/grpc-gateway/runtime"
 	"google.golang.org/grpc"
 	grpccred "google.golang.org/grpc/credentials"
 )
 
-type server struct{}
+type server struct {
+	config  *tls.Config
+	backend string
+}
 
-func (s *server) Process(ctx context.Context, req *pb.ProcessRequest) (*pb.ProcessReply, error) {
+func newServer(certFile, backend string, allowInsecure bool) (*server, error) {
+	config, err := readCert(certFile)
+	if err != nil {
+		return nil, fmt.Errorf("NewServer failed to read certfile %q: %v", certFile, err)
+	}
+
+	if backend == "" {
+		return nil, fmt.Errorf("NewServer: backend must be specified")
+	}
+	config.InsecureSkipVerify = allowInsecure
+
+	return &server{
+		config:  config,
+		backend: backend,
+	}, nil
+}
+
+func (s *server) process(ctx context.Context, req *pb.ProcessRequest) (*pb.ProcessReply, error) {
+	opts := []grpc.DialOption{grpc.WithTransportCredentials(grpccred.NewTLS(s.config))}
+	// Set up a connection to the server.
+	conn, err := grpc.Dial(s.backend, opts...)
+	if err != nil {
+		return nil, fmt.Errorf("failed to connect to %s: %v", s.backend, err)
+	}
+	defer conn.Close()
+	c := backend.NewBackendClient(conn)
+
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	defer cancel()
+	r, err := c.Process(ctx, &backend.ProcessRequest{Input: req.GetInput()})
+	if err != nil {
+		return nil, fmt.Errorf("backend process failed: %v", err)
+	}
+
 	reply := &pb.ProcessReply{
-		Output: fmt.Sprintf("input was: %q", req.GetInput()),
+		Output: r.GetOutput(),
 	}
 
 	return reply, nil
+}
+
+func (s *server) Process(ctx context.Context, req *pb.ProcessRequest) (*pb.ProcessReply, error) {
+	log.Printf("Frontend begins processing request:{%s}", strings.TrimSpace(proto.MarshalTextString(req)))
+	reply, err := s.process(ctx, req)
+	if err != nil {
+		log.Printf("Error processing request: %v", err)
+		return reply, err
+	}
+	log.Printf("Done processing request, reply:{%s}", strings.TrimSpace(proto.MarshalTextString(reply)))
+	return reply, err
+}
+
+func readCert(certFile string) (*tls.Config, error) {
+	if certFile == "" {
+		return nil, fmt.Errorf("certfile must be specified")
+	}
+	caCert, err := ioutil.ReadFile(certFile)
+	if err != nil {
+		return nil, fmt.Errorf("readCert failed to read %s: %v", certFile, err)
+	}
+	caCertPool := x509.NewCertPool()
+	caCertPool.AppendCertsFromPEM(caCert)
+	return &tls.Config{RootCAs: caCertPool}, nil
 }
 
 func readTLSFiles(certFile, keyFile string) (tls.Certificate, error) {
@@ -56,7 +121,7 @@ func grpcHandlerFunc(grpcServer *grpc.Server, otherHandler http.Handler) http.Ha
 	})
 }
 
-func run(certFile, keyFile, port string, allowInsecure bool) error {
+func run(certFile, keyFile, port, backend string, allowInsecure bool) error {
 	cert, err := readTLSFiles(certFile, keyFile)
 	if err != nil {
 		return fmt.Errorf("unable to load certificates: %v", err)
@@ -69,8 +134,13 @@ func run(certFile, keyFile, port string, allowInsecure bool) error {
 
 	opts := []grpc.ServerOption{grpc.Creds(grpccred.NewTLS(&tlsConfig))}
 
+	s, err := newServer(certFile, backend, allowInsecure)
+	if err != nil {
+		return fmt.Errorf("unable to create server: %v", err)
+	}
+
 	grpcServer := grpc.NewServer(opts...)
-	pb.RegisterFrontendServer(grpcServer, &server{})
+	pb.RegisterFrontendServer(grpcServer, s)
 
 	ctx := context.Background()
 	gwmux := runtime.NewServeMux()
@@ -102,18 +172,39 @@ func run(certFile, keyFile, port string, allowInsecure bool) error {
 	return nil
 }
 
+func getIpAddresses() ([]string, error) {
+	interfaces, err := net.InterfaceAddrs()
+	if err != nil {
+		return nil, fmt.Errorf("faild ot list interfaces: %v", err)
+	}
+	var addrs []string
+	for _, a := range interfaces {
+		if ipnet, ok := a.(*net.IPNet); ok && !ipnet.IP.IsLoopback() {
+			if ipnet.IP.To4() != nil {
+				addrs = append(addrs, ipnet.IP.String())
+			}
+		}
+	}
+	return addrs, nil
+}
+
 func main() {
 	var (
+		backend       = flag.String("backend", "localhost:8101", "port to listen on")
 		certFile      = flag.String("certfile", "", "certificate file")
 		allowInsecure = flag.Bool("insecure", false, "allow self signed certificates")
 		keyFile       = flag.String("keyfile", "", "private key file")
-		port          = flag.String("port", ":8100", "port to listen on")
+		addr          = flag.String("addr", ":443", "port to listen on")
 	)
 	flag.Parse()
 
-	fmt.Println("server started")
+	ips, err := getIpAddresses()
+	if err != nil {
+		log.Fatalf("Unable to get ip addresses: %v", err)
+	}
+	log.Printf("frontend begins: available interfaces: %s; addr= %q", strings.Join(ips, ", "), *addr)
 
-	if err := run(*certFile, *keyFile, *port, *allowInsecure); err != nil {
+	if err := run(*certFile, *keyFile, *addr, *backend, *allowInsecure); err != nil {
 		log.Fatalf("run returned an error: %v", err)
 	}
 

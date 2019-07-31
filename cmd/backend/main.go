@@ -12,6 +12,7 @@ import (
 	"strings"
 
 	pb "github.com/bretmckee/microservice/api/backend"
+	"github.com/golang/protobuf/proto"
 	"github.com/grpc-ecosystem/grpc-gateway/runtime"
 	"google.golang.org/grpc"
 	grpccred "google.golang.org/grpc/credentials"
@@ -19,12 +20,23 @@ import (
 
 type server struct{}
 
-func (s *server) Process(ctx context.Context, req *pb.ProcessRequest) (*pb.ProcessReply, error) {
+func (s *server) process(ctx context.Context, req *pb.ProcessRequest) (*pb.ProcessReply, error) {
 	reply := &pb.ProcessReply{
 		Output: fmt.Sprintf("backend input was: %q", req.GetInput()),
 	}
 
 	return reply, nil
+}
+
+func (s *server) Process(ctx context.Context, req *pb.ProcessRequest) (*pb.ProcessReply, error) {
+	log.Printf("Backend begins processing request:{%s}", strings.TrimSpace(proto.MarshalTextString(req)))
+	reply, err := s.process(ctx, req)
+	if err != nil {
+		log.Printf("Error processing request: %v", err)
+		return reply, err
+	}
+	log.Printf("Done processing request, reply:{%s}", strings.TrimSpace(proto.MarshalTextString(reply)))
+	return reply, err
 }
 
 func readTLSFiles(certFile, keyFile string) (tls.Certificate, error) {
@@ -56,7 +68,7 @@ func grpcHandlerFunc(grpcServer *grpc.Server, otherHandler http.Handler) http.Ha
 	})
 }
 
-func run(certFile, keyFile, port string, allowInsecure bool) error {
+func run(certFile, keyFile, addr string, allowInsecure bool) error {
 	cert, err := readTLSFiles(certFile, keyFile)
 	if err != nil {
 		return fmt.Errorf("unable to load certificates: %v", err)
@@ -75,20 +87,20 @@ func run(certFile, keyFile, port string, allowInsecure bool) error {
 	ctx := context.Background()
 	gwmux := runtime.NewServeMux()
 	dopts := []grpc.DialOption{grpc.WithTransportCredentials(grpccred.NewTLS(&tlsConfig))}
-	if err := pb.RegisterBackendHandlerFromEndpoint(ctx, gwmux, port, dopts); err != nil {
+	if err := pb.RegisterBackendHandlerFromEndpoint(ctx, gwmux, addr, dopts); err != nil {
 		return fmt.Errorf("failed to register handler from endpoint: %v", err)
 	}
 
 	mux := http.NewServeMux()
 	mux.Handle("/", gwmux)
 
-	lis, err := net.Listen("tcp", port)
+	lis, err := net.Listen("tcp", addr)
 	if err != nil {
-		return fmt.Errorf("failed to listen on port %s: %v", port, err)
+		return fmt.Errorf("failed to listen on addr %s: %v", addr, err)
 	}
 
 	srv := &http.Server{
-		Addr:    port,
+		Addr:    addr,
 		Handler: grpcHandlerFunc(grpcServer, mux),
 		TLSConfig: &tls.Config{
 			Certificates: []tls.Certificate{cert},
@@ -102,18 +114,38 @@ func run(certFile, keyFile, port string, allowInsecure bool) error {
 	return nil
 }
 
+func getIpAddresses() ([]string, error) {
+	interfaces, err := net.InterfaceAddrs()
+	if err != nil {
+		return nil, fmt.Errorf("faild ot list interfaces: %v", err)
+	}
+	var addrs []string
+	for _, a := range interfaces {
+		if ipnet, ok := a.(*net.IPNet); ok && !ipnet.IP.IsLoopback() {
+			if ipnet.IP.To4() != nil {
+				addrs = append(addrs, ipnet.IP.String())
+			}
+		}
+	}
+	return addrs, nil
+}
+
 func main() {
 	var (
 		certFile      = flag.String("certfile", "", "certificate file")
 		allowInsecure = flag.Bool("insecure", false, "allow self signed certificates")
 		keyFile       = flag.String("keyfile", "", "private key file")
-		port          = flag.String("port", ":8100", "port to listen on")
+		addr          = flag.String("addr", ":443", "[address]:port to listen on")
 	)
 	flag.Parse()
 
-	fmt.Println("about to run")
+	ips, err := getIpAddresses()
+	if err != nil {
+		log.Fatalf("Unable to get ip addresses: %v", err)
+	}
+	log.Printf("backend begins: available interfaces: %s; addr= %q", strings.Join(ips, ", "), *addr)
 
-	if err := run(*certFile, *keyFile, *port, *allowInsecure); err != nil {
+	if err := run(*certFile, *keyFile, *addr, *allowInsecure); err != nil {
 		log.Fatalf("run returned an error: %v", err)
 	}
 
