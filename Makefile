@@ -7,5 +7,5 @@ generate:
 
 .PHONEY: containers
 containers:
-	docker build -f Dockerfile.frontend -t frontend .
-	docker build -f Dockerfile.backend -t backend .
+	docker build -f Dockerfile.frontend -t bretmckee/microservice-frontend .
+	docker build -f Dockerfile.backend -t bretmckee/microservice-backend .
