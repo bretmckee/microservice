@@ -14,15 +14,16 @@ import (
 	"strings"
 	"time"
 
-	backend "github.com/bretmckee/microservice/api/backend"
-	pb "github.com/bretmckee/microservice/api/frontend"
+	backend "github.com/bretmckee/microservice/backend/api"
+	pb "github.com/bretmckee/microservice/frontend/api"
 	"github.com/golang/protobuf/proto"
-	"github.com/grpc-ecosystem/grpc-gateway/runtime"
+	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 	"google.golang.org/grpc"
 	grpccred "google.golang.org/grpc/credentials"
 )
 
 type server struct {
+	pb.UnimplementedFrontendServer
 	config  *tls.Config
 	backend string
 }

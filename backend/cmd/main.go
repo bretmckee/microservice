@@ -11,14 +11,16 @@ import (
 	"os"
 	"strings"
 
-	pb "github.com/bretmckee/microservice/api/backend"
+	pb "github.com/bretmckee/microservice/backend/api"
 	"github.com/golang/protobuf/proto"
-	"github.com/grpc-ecosystem/grpc-gateway/runtime"
+	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 	"google.golang.org/grpc"
 	grpccred "google.golang.org/grpc/credentials"
 )
 
-type server struct{}
+type server struct {
+	pb.UnimplementedBackendServer
+}
 
 func (s *server) process(ctx context.Context, req *pb.ProcessRequest) (*pb.ProcessReply, error) {
 	reply := &pb.ProcessReply{
