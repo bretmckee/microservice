@@ -63,7 +63,7 @@ func (s *server) process(ctx context.Context, req *pb.ProcessRequest) (*pb.Proce
 	}
 
 	reply := &pb.ProcessReply{
-		Output: r.GetOutput(),
+		Output: "frontend returning: " + r.GetOutput(),
 	}
 
 	return reply, nil
