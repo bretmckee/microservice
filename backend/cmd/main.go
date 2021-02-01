@@ -11,7 +11,7 @@ import (
 	"os"
 	"strings"
 
-	pb "github.com/bretmckee/microservice/backend/api"
+	pb "github.com/bretmckee/microservice/backend/backendapi"
 	"github.com/golang/protobuf/proto"
 	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 	"google.golang.org/grpc"
