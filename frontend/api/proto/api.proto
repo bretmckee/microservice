@@ -1,6 +1,6 @@
 syntax = "proto3";
 package github.com.bretmckee.microservice.frontend.api;
-option go_package = "github.com/bretmckee/microservice/backend/api";
+option go_package = "github.com/bretmckee/microservice/frontend/api";
 
 import "google/api/annotations.proto";
 
