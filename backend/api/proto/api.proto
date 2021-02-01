@@ -1,8 +1,8 @@
 syntax = "proto3";
-package backend;
+package github.com.bretmckee.microservice.backend.api;
+option go_package = "github.com/bretmckee/microservice/backend/api";
 
 import "google/api/annotations.proto";
-
 
 service Backend {
   rpc Process (ProcessRequest) returns (ProcessReply) {
