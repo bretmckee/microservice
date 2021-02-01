@@ -14,8 +14,8 @@ import (
 	"strings"
 	"time"
 
-	backend "github.com/bretmckee/microservice/backend/api"
-	pb "github.com/bretmckee/microservice/frontend/api"
+	backend "github.com/bretmckee/microservice/backend/backendapi"
+	pb "github.com/bretmckee/microservice/frontend/frontendapi"
 	"github.com/golang/protobuf/proto"
 	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 	"google.golang.org/grpc"

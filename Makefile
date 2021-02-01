@@ -26,19 +26,19 @@ grpc-tools:
 %.pb.gw.go: proto/%.proto
 	${PROTOC} -I "$(<D)" -I "${ANNOTATIONS_DIR}" --grpc-gateway_out="$(@D)" --grpc-gateway_opt=logtostderr=true --grpc-gateway_opt=paths=source_relative $<
 
-.PHONY: frontend-generated
-frontend-generated: frontend/api/api.pb.go frontend/api/api_grpc.pb.go frontend/api/api.pb.gw.go
+.PHONY: frontend-api
+frontend-api: frontend/frontendapi/frontend_api.pb.go frontend/frontendapi/frontend_api_grpc.pb.go frontend/frontendapi/frontend_api.pb.gw.go
 
-.PHONY: backend-generated
-backend-generated: backend/api/api.pb.go backend/api/api_grpc.pb.go backend/api/api.pb.gw.go
+.PHONY: backend-api
+backend-api: backend/backendapi/backend_api.pb.go backend/backendapi/backend_api_grpc.pb.go backend/backendapi/backend_api.pb.gw.go
 
-.PHONY: generated
-generated: frontend-generated backend-generated
+.PHONY: api
+api: frontend-api backend-api
 
 .PHONY: clean
 clean:
 	rm frontend/api/*.go backend/api/*.go
 
 .PHONY: $(CONTAINERS)
-$(CONTAINERS): generated
+$(CONTAINERS): api
 	docker build -f Dockerfile  -t $@:dev --build-arg TARGET=$@ .

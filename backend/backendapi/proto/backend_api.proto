@@ -1,13 +1,13 @@
 syntax = "proto3";
-package github.com.bretmckee.microservice.frontend.api;
-option go_package = "github.com/bretmckee/microservice/frontend/api";
+package github.com.bretmckee.microservice.backend.backendapi;
+option go_package = "github.com/bretmckee/microservice/backend/backendapi";
 
 import "google/api/annotations.proto";
 
-service Frontend {
+service Backend {
   rpc Process (ProcessRequest) returns (ProcessReply) {
     option (google.api.http) = {
-      post: "/v1/microserver/process"
+      post: "/v1/microserver/backend/process"
       body: "*"
     };
   }
