@@ -37,7 +37,7 @@ api: frontend-api backend-api
 
 .PHONY: clean
 clean:
-	rm frontend/api/*.go backend/api/*.go
+	rm frontend/frontendapi/*.go backend/backendapi/*.go
 
 .PHONY: $(CONTAINERS)
 $(CONTAINERS): api
