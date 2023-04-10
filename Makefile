@@ -1,13 +1,13 @@
-PROTOC := /usr/local/protoc/bin/protoc
+PROTOC := /usr/local/bin/protoc
 ANNOTATIONS_BASE_DIR := $(shell go list -m -f "{{.Dir}}" "github.com/grpc-ecosystem/grpc-gateway/v2")
 ANNOTATIONS_DIR := $(ANNOTATIONS_BASE_DIR)/third_party/googleapis
 
 CONTAINERS := backend frontend
 
-.DEFAULT_GOAL := all
+.DEFAULT_GOAL := containers
 
-.PHONY: all
-all: $(CONTAINERS)
+.PHONY: containers
+containers: $(CONTAINERS)
 
 .PHONY: grpc-tools
 grpc-tools:
@@ -41,4 +41,4 @@ clean:
 
 .PHONY: $(CONTAINERS)
 $(CONTAINERS): api
-	docker build -f Dockerfile  -t $@:dev --build-arg TARGET=$@ .
+	docker build -f Dockerfile  -t $@ --build-arg TARGET=$@ .
