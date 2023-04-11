@@ -10,7 +10,7 @@ The first step is to install the protobuf compiler. There is a script provided t
 install pre-compiled binaries from
 https://grpc.io/docs/protoc-installation/#binary-install
 ```
-sudo bash -x install-protoc.sh
+sudo bash -x install-tools.sh
 ```
 
 After protoc is installed, the golang plugins must be installed :
