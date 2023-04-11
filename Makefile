@@ -1,3 +1,6 @@
+PATH := $(PATH):/usr/local/go/bin:$(HOME)/go/bin
+SHELL := env PATH=$(PATH) /bin/bash
+GO := /usr/local/go/bin/go
 PROTOC := /usr/local/bin/protoc
 ANNOTATIONS_BASE_DIR := $(shell go list -m -f "{{.Dir}}" "github.com/grpc-ecosystem/grpc-gateway/v2")
 ANNOTATIONS_DIR := $(ANNOTATIONS_BASE_DIR)/third_party/googleapis
@@ -11,7 +14,7 @@ containers: $(CONTAINERS)
 
 .PHONY: grpc-tools
 grpc-tools:
-	go install \
+	$(GO) install \
     github.com/grpc-ecosystem/grpc-gateway/v2/protoc-gen-grpc-gateway \
     github.com/grpc-ecosystem/grpc-gateway/v2/protoc-gen-openapiv2 \
     google.golang.org/protobuf/cmd/protoc-gen-go \
