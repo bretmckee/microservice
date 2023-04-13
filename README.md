@@ -21,7 +21,7 @@ After protoc is installed, the golang plugins must be installed :
 To launch and test the backend use:
 ```
  make containers
- docker run -it --rm --name backend -p 8101:443 backend --certfile=testdata/selfsigned.crt --keyfile=testdata/selfsigned.key --insecure
+ docker run -it --rm --name backend -p 8101:443 -v ${PWD}/testdata:/testdata backend  --certfile=testdata/selfsigned.crt --keyfile=testdata/selfsigned.key --insecure
  # Test the back end using curl
  curl -v -X POST --insecure -w "\n" https://localhost:8101/v1/microserver/backend/process -d '{"input":"foo"}'
  ```
