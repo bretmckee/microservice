@@ -6,11 +6,17 @@ ANNOTATIONS_BASE_DIR := $(shell $(GO) list -m -f "{{.Dir}}" "github.com/grpc-eco
 ANNOTATIONS_DIR := $(ANNOTATIONS_BASE_DIR)/third_party/googleapis
 PROTO_INCLUDES := -I "${ANNOTATIONS_DIR}" -I /usr/include
 
-# The container/ prefix is just to avoid name collisions with the binaries. It
-# is stripped off by the rules that use the targets.
-CONTAINERS := container/backend container/frontend
+BACKEND_SERVER := backend/cmd/server/server
+FRONTEND_SERVER := frontend/cmd/server/server
+
+COMMANDS := $(BACKEND_SERVER) $(FRONTEND_SERVER)
+
+CONTAINERS := backend frontend
 
 .DEFAULT_GOAL := containers
+
+.PHONY: commands
+commands: $(COMMANDS)
 
 .PHONY: containers
 containers: $(CONTAINERS)
@@ -44,17 +50,24 @@ backend-api: backend/backendapi/backend_api.pb.go backend/backendapi/backend_api
 .PHONY: apis
 api: frontend-api backend-api
 
-backend: backend-api
-frontend: frontend-api backend-api
+$(BACKEND_SERVER): backend-api
+$(FRONTEND_SERVER): frontend-api backend-api
 
-.PHONY: backend frontend
-backend frontend:
-	CGO_ENABLED=0 $(GO) build -o $(@)/cmd/$(@) $(@)/cmd/main.go
+# These targets are not really phony, but the dependencies are hard and the
+# compiles are fast and if the yare declared PHONY they are always rebuilt.
+.PHONY: $(COMMANDS)
+$(COMMANDS):
+	cd $(@D); CGO_ENABLED=0 $(GO) build ./...
+
+.PHONY: frontend
+frontend:
+	docker build -f Dockerfile -t $(@) --build-arg TARGET=$(FRONTEND_SERVER) .
+
+.PHONY: backend
+backend:
+	docker build -f Dockerfile -t $(@) --build-arg TARGET=$(BACKEND_SERVER) .
 
 .PHONY: clean
 clean:
-	rm -f frontend/frontendapi/*.go backend/backendapi/*.go
+	rm -f frontend/frontendapi/*.go backend/backendapi/*.go $(COMMANDS)
 
-.PHONY:
-container/frontend container/backend:
-	docker build -f Dockerfile -t $(@F) --build-arg TARGET=$(@F) .

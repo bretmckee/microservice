@@ -1,1 +1,2 @@
-api/*.go
+frontendapi/*.go
+cmd/server/server

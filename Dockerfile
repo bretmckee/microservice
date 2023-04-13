@@ -24,6 +24,6 @@ RUN make $TARGET
 # Create the final container
 FROM golang:1.20.3-alpine3.17 AS final
 ARG TARGET
-COPY --from=build /go/src/$TARGET/cmd/$TARGET /usr/local/bin/cmd
-ENTRYPOINT ["/usr/local/bin/cmd"]
+COPY --from=build /go/src/$TARGET/server /usr/local/bin/server
+ENTRYPOINT ["/usr/local/bin/server"]
 CMD ["-?"]
