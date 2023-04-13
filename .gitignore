@@ -1,2 +1,4 @@
 backend/backendapi/*.go
+backend/cmd/backend
 frontend/frontendapi/*.go
+frontend/cmd/frontend
