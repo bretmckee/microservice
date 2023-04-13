@@ -7,9 +7,13 @@ ANNOTATIONS_DIR := $(ANNOTATIONS_BASE_DIR)/third_party/googleapis
 PROTO_INCLUDES := -I "${ANNOTATIONS_DIR}" -I /usr/include
 
 BACKEND_SERVER := backend/cmd/server/server
-FRONTEND_SERVER := frontend/cmd/server/server
+BACKEND_CLIENT := backend/cmd/client/client
+BACKEND_COMMANDS= $(BACKEND_SERVER) $(BACKEND_CLIENT)
 
-COMMANDS := $(BACKEND_SERVER) $(FRONTEND_SERVER)
+FRONTEND_SERVER := frontend/cmd/server/server
+FRONTEND_COMMANDS := $(FRONTEND_SERVER)
+
+COMMANDS := $(BACKEND_COMMANDS) $(FRONTEND_COMMANDS)
 
 CONTAINERS := backend frontend
 
