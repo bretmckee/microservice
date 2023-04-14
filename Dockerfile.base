@@ -1,0 +1,5 @@
+FROM golang:1.20.3-alpine3.17 AS base
+RUN apk add --update --no-cache make protoc protobuf protobuf-dev docker openrc
+RUN ln -s /usr/bin/protoc /usr/local/bin
+WORKDIR /go/src
+ENV HOME /tmp

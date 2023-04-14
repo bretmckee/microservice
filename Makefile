@@ -2,9 +2,10 @@ PATH := $(PATH):/usr/local/go/bin:$(HOME)/go/bin
 SHELL := env PATH=$(PATH) /bin/sh
 GO := /usr/local/go/bin/go
 PROTOC := /usr/local/bin/protoc
-ANNOTATIONS_BASE_DIR := $(shell $(GO) list -m -f "{{.Dir}}" "github.com/grpc-ecosystem/grpc-gateway/v2")
-ANNOTATIONS_DIR := $(ANNOTATIONS_BASE_DIR)/third_party/googleapis
-PROTO_INCLUDES := -I "${ANNOTATIONS_DIR}" -I /usr/include
+
+ANNOTATIONS_BASE_DIR = $(shell $(GO) list -m -f "{{.Dir}}" "github.com/grpc-ecosystem/grpc-gateway/v2")
+ANNOTATIONS_DIR = $(ANNOTATIONS_BASE_DIR)/third_party/googleapis
+PROTO_INCLUDES = -I "${ANNOTATIONS_DIR}" -I /usr/include
 
 BACKEND_SERVER := backend/cmd/server/server
 BACKEND_CLIENT := backend/cmd/client/client
@@ -52,7 +53,7 @@ frontend-api: frontend/frontendapi/frontend_api.pb.go frontend/frontendapi/front
 backend-api: backend/backendapi/backend_api.pb.go backend/backendapi/backend_api_grpc.pb.go backend/backendapi/backend_api.pb.gw.go
 
 .PHONY: apis
-api: frontend-api backend-api
+apis: frontend-api backend-api
 
 $(BACKEND_SERVER): backend-api
 $(FRONTEND_SERVER): frontend-api backend-api
@@ -60,7 +61,7 @@ $(FRONTEND_SERVER): frontend-api backend-api
 # These targets are not really phony, but the dependencies are hard and the
 # compiles are fast and if the yare declared PHONY they are always rebuilt.
 .PHONY: $(COMMANDS)
-$(COMMANDS):
+$(COMMANDS): install-tools
 	cd $(@D); CGO_ENABLED=0 $(GO) build ./...
 
 .PHONY: frontend

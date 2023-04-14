@@ -1,7 +1,8 @@
 FROM golang:1.20.3-alpine3.17 AS base
-ENV GO111MODULE on
-RUN apk add --no-cache make protoc protobuf protobuf-dev
+RUN apk add --update --no-cache make protoc protobuf protobuf-dev docker openrc
 RUN ln -s /usr/bin/protoc /usr/local/bin
+WORKDIR /go/src
+ENV HOME /tmp
 
 FROM base AS download
 ENV GO111MODULE on
@@ -18,12 +19,12 @@ ARG TARGET
 WORKDIR /go/src
 COPY --from=download /go /go
 COPY . .
-RUN make api
+RUN make apis
 RUN make $TARGET
 
 # Create the final container
 FROM golang:1.20.3-alpine3.17 AS final
 ARG TARGET
-COPY --from=build /go/src/$TARGET/server /usr/local/bin/server
+COPY --from=build /go/src/$TARGET /usr/local/bin/server
 ENTRYPOINT ["/usr/local/bin/server"]
 CMD ["-?"]
